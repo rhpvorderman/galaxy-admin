@@ -50,7 +50,7 @@ setup(
     ],
     entry_points={
         "console_scripts": [
-            'galaxy-admin-user-emails=galaxy_admin:user_emails:main'
+            'galaxy-admin-user-emails=galaxy_admin.user_emails:main'
         ]
     }
 )
