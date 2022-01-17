@@ -22,19 +22,31 @@
 A script to get all e-mail addresses from users of this particular galaxy.
 """
 import argparse
-from typing import List, Dict
+from typing import Callable, Dict, List
 
 from bioblend.galaxy import GalaxyInstance
 
 
-def get_user_emails(galaxy: GalaxyInstance) -> List[str]:
+def print_user_emails(galaxy: GalaxyInstance) -> None:
     user_info: List[Dict[str, str]] = galaxy.users.get_users()
-    return [user.get("email") for user in user_info
-            if user.get("email") is not None]
+    for user in user_info:
+        email = user.get("email")
+        if email is not None:
+            print(email)
+
+
+COMMANDS: Dict[str, Callable[[GalaxyInstance], None]] = {
+    "user_emails": print_user_emails
+}
+AVAILABLE_COMMANDS = list(COMMANDS.keys())
 
 
 def argument_parser():
     parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "command",
+        help="The command to execute",
+        choices=AVAILABLE_COMMANDS)
     parser.add_argument("-g", "--galaxy", type=str,
                         help="URL of the galaxy instance")
     parser.add_argument("-a", "--api-key", type=str,
@@ -56,8 +68,7 @@ def main():
         password=args.password,
         verify=args.verify
     )
-    for email in get_user_emails(galaxy):
-        print(email)
+    COMMANDS[args.command](galaxy)
 
 
 if __name__ == "__main__":
