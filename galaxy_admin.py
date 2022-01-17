@@ -26,6 +26,8 @@ from typing import Callable, Dict, List
 
 from bioblend.galaxy import GalaxyInstance
 
+from datetime import datetime, timedelta
+
 
 def print_user_emails(galaxy: GalaxyInstance) -> None:
     user_info: List[Dict[str, str]] = galaxy.users.get_users()
@@ -35,8 +37,21 @@ def print_user_emails(galaxy: GalaxyInstance) -> None:
             print(email)
 
 
+def print_usage_report(galaxy: GalaxyInstance) -> None:
+    current_date = datetime.now().date()
+    print("                    \tNumber of jobs\tActive users")
+    days_ago = (1, 7, 30, 90, 180, 365)
+    for days in days_ago:
+        time_point = current_date - timedelta(days=days)
+        jobs = galaxy.jobs.get_jobs(date_range_min=time_point.isoformat(),
+                                    user_details=True)
+        unique_users = {job.get("user_email") for job in jobs}
+        print(f"In the last {days:3} day(s):\t{len(jobs):6}\t{len(unique_users):4}")
+
+
 COMMANDS: Dict[str, Callable[[GalaxyInstance], None]] = {
-    "user_emails": print_user_emails
+    "user_emails": print_user_emails,
+    "usage_report": print_usage_report,
 }
 AVAILABLE_COMMANDS = list(COMMANDS.keys())
 
