@@ -22,8 +22,11 @@
 A script to get all e-mail addresses from users of this particular galaxy.
 """
 import argparse
+import statistics
 from typing import Callable, Dict, List
 
+from collections import defaultdict
+import bioblend
 from bioblend.galaxy import GalaxyInstance
 
 from datetime import datetime, timedelta
@@ -49,9 +52,36 @@ def print_usage_report(galaxy: GalaxyInstance) -> None:
         print(f"In the last {days:3} day(s):\t{len(jobs):6}\t{len(unique_users):4}")
 
 
+def print_job_runtimes(galaxy: GalaxyInstance) -> None:
+    days_ago = 30
+    current_date = datetime.now().date()
+    time_point = current_date - timedelta(days=days_ago)
+    jobs = galaxy.jobs.get_jobs(date_range_min=time_point.isoformat())
+    print(f"Jobs in the last {days_ago:3} day(s):\t{len(jobs):6}")
+    runtimes = defaultdict(list)
+    for job in jobs:
+        if job.get('state') == 'ok':
+            try:
+                details = galaxy.jobs.show_job(job.get('id'), full_details=True)
+            except bioblend.ConnectionError:
+                break
+            metrics = details["job_metrics"]
+            for metric in metrics:
+                if metric["name"] == "runtime_seconds":
+                    runtimes[job["tool_id"]].append(float(metric["raw_value"]))
+    for tool_id, runtime_values in runtimes.items():
+        max_runtime = max(runtime_values)
+        min_runtime = min(runtime_values)
+        median = statistics.median(runtime_values)
+        mean = statistics.mean(runtime_values)
+        print(f"{tool_id}\tmin: {min_runtime}\tmax: {max_runtime}\t"
+              f"median: {median}\tmean: {mean}")
+
+
 COMMANDS: Dict[str, Callable[[GalaxyInstance], None]] = {
     "user_emails": print_user_emails,
     "usage_report": print_usage_report,
+    "job_runtimes": print_job_runtimes,
 }
 AVAILABLE_COMMANDS = list(COMMANDS.keys())
 
