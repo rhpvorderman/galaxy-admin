@@ -65,7 +65,7 @@ def print_job_runtimes(galaxy: GalaxyInstance, days_ago: str = "30") -> None:
             try:
                 details = galaxy.jobs.show_job(job.get('id'), full_details=True)
             except bioblend.ConnectionError as error:
-                warnings.warn(error)
+                warnings.warn(str(error))
                 break
             metrics = details["job_metrics"]
             for metric in metrics:
