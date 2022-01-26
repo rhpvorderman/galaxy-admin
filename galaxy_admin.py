@@ -81,7 +81,7 @@ def print_job_runtimes(galaxy: GalaxyInstance, days_ago: str = "30") -> None:
               f"{max_runtime:13d}\t{median:8d}\t{mean:8d}")
 
 
-COMMANDS: Dict[str, Callable[[GalaxyInstance, ...], None]] = {
+COMMANDS: Dict[str, Callable[..., None]] = {
     "user_emails": print_user_emails,
     "usage_report": print_usage_report,
     "job_runtimes": print_job_runtimes,
