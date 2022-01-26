@@ -52,12 +52,12 @@ def print_usage_report(galaxy: GalaxyInstance) -> None:
         print(f"In the last {days:3} day(s):\t{len(jobs):6}\t{len(unique_users):4}")
 
 
-def print_job_runtimes(galaxy: GalaxyInstance) -> None:
-    days_ago = 30
+def print_job_runtimes(galaxy: GalaxyInstance, days_ago: str = "30") -> None:
+    days_ago = int(days_ago)
     current_date = datetime.now().date()
     time_point = current_date - timedelta(days=days_ago)
     jobs = galaxy.jobs.get_jobs(date_range_min=time_point.isoformat())
-    print(f"Jobs in the last {days_ago:3} day(s):\t{len(jobs):6}")
+    print(f"Jobs in the last {days_ago:3} day(s):\t{len(jobs):6}\n")
     runtimes = defaultdict(list)
     for job in jobs:
         if job.get('state') == 'ok':
@@ -69,16 +69,19 @@ def print_job_runtimes(galaxy: GalaxyInstance) -> None:
             for metric in metrics:
                 if metric["name"] == "runtime_seconds":
                     runtimes[job["tool_id"]].append(float(metric["raw_value"]))
+    print(f"tool_id{93 * ' '}\ttimes executed\t  min_runtime\t  max_runtime\t"
+          f"  median\t    mean")
     for tool_id, runtime_values in runtimes.items():
-        max_runtime = max(runtime_values)
-        min_runtime = min(runtime_values)
-        median = statistics.median(runtime_values)
-        mean = statistics.mean(runtime_values)
-        print(f"{tool_id}\tmin: {min_runtime}\tmax: {max_runtime}\t"
-              f"median: {median}\tmean: {mean}")
+        max_runtime = round(max(runtime_values))
+        min_runtime = round(min(runtime_values))
+        median = round(statistics.median(runtime_values))
+        mean = round(statistics.mean(runtime_values))
+        times_executed = len(runtime_values)
+        print(f"{tool_id:100s}\t{times_executed:14}\t{min_runtime:13d}\t"
+              f"{max_runtime:13d}\t{median:8d}\t{mean:8d}")
 
 
-COMMANDS: Dict[str, Callable[[GalaxyInstance], None]] = {
+COMMANDS: Dict[str, Callable[[GalaxyInstance, ...], None]] = {
     "user_emails": print_user_emails,
     "usage_report": print_usage_report,
     "job_runtimes": print_job_runtimes,
@@ -92,6 +95,10 @@ def argument_parser():
         "command",
         help="The command to execute",
         choices=AVAILABLE_COMMANDS)
+    parser.add_argument("args",
+                        nargs="*",
+                        help="Arguments for the command line function. "
+                             "(optional)")
     parser.add_argument("-g", "--galaxy", type=str,
                         help="URL of the galaxy instance")
     parser.add_argument("-a", "--api-key", type=str,
@@ -113,7 +120,7 @@ def main():
         password=args.password,
         verify=args.verify
     )
-    COMMANDS[args.command](galaxy)
+    COMMANDS[args.command](galaxy, *args.args)
 
 
 if __name__ == "__main__":
