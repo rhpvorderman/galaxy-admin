@@ -23,6 +23,7 @@ A script to get all e-mail addresses from users of this particular galaxy.
 """
 import argparse
 import statistics
+import warnings
 from typing import Callable, Dict, List
 
 from collections import defaultdict
@@ -63,7 +64,8 @@ def print_job_runtimes(galaxy: GalaxyInstance, days_ago: str = "30") -> None:
         if job.get('state') == 'ok':
             try:
                 details = galaxy.jobs.show_job(job.get('id'), full_details=True)
-            except bioblend.ConnectionError:
+            except bioblend.ConnectionError as error:
+                warnings.warn(error)
                 break
             metrics = details["job_metrics"]
             for metric in metrics:
